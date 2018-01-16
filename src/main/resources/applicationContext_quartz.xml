@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+    http://www.springframework.org/schema/context
+    http://www.springframework.org/schema/context/spring-context-4.0.xsd"
+       default-lazy-init="false">
+
+    <bean id="mailReportInitServ" class="mi.data.mail.MailInitService"></bean>
+
+    <!-- step0. 定时初始化报表邮件的任务类 -->
+    <bean id="mailReportInitTask" class="mi.data.task.MailReportInitTask"></bean>
+
+    <!-- step1. JobDetail, 定义调用对象及其方法 -->
+    <bean id="mailReportInitService" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <!-- 调用的类 -->
+        <property name="targetObject">
+            <ref bean="mailReportInitTask"/>
+        </property>
+        <!-- 调用类中的方法 -->
+        <property name="targetMethod">
+            <value>execute</value>
+        </property>
+    </bean>
+
+    <!-- step2. Trigger, 定义触发时间 -->
+    <bean id="mailReportInitTrigger" class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+        <property name="jobDetail">
+            <ref bean="mailReportInitService"/>
+        </property>
+        <!-- cron表达式 -->
+        <property name="cronExpression">
+            <value>02 10 * * * ?</value> <!-- 每小时10分02s调用一次-->
+        </property>
+    </bean>
+
+    <!-- step3. Scheduler, 将lazy-init='false'容器启动就会执行调度程序 -->
+    <bean id="startQuertz" lazy-init="false" autowire="no" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+        <property name="triggers">
+            <list>
+                <ref bean="mailReportInitTrigger"/>
+            </list>
+        </property>
+    </bean>
+</beans>

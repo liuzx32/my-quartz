@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+    http://www.springframework.org/schema/context
+    http://www.springframework.org/schema/context/spring-context-4.0.xsd
+    http://www.springframework.org/schema/tx
+    http://www.springframework.org/schema/tx/spring-tx-4.0.xsd"
+       default-lazy-init="true">
+
+    <!--注册annotation-->
+    <context:annotation-config/>
+    <!-- 自动扫描 -->
+    <context:component-scan base-package="com.xiaomi.miui.ad">
+        <context:include-filter type="regex" expression="com\.xiaomi\.miui\.ad\.mail.*"/>
+    </context:component-scan>
+
+    <context:component-scan base-package="com.xiaomi.rose.perfcounter.controllers"/>
+
+    <context:component-scan base-package="com.xiaomi.rose.perfcounter.interceptor">
+        <context:include-filter type="regex" expression=".*Interceptor"/>
+    </context:component-scan>
+
+    <context:component-scan base-package="com.xiaomi.passport.sdk.interceptors">
+        <context:include-filter type="regex" expression=".*Interceptor"/>
+    </context:component-scan>
+
+    <context:component-scan base-package="com.xiaomi.miui.ad">
+        <context:include-filter type="regex" expression=".*Interceptor"/>
+    </context:component-scan>
+
+    <!-- DAO支持 -->
+    <bean class="net.paoding.rose.jade.context.spring.JadeBeanFactoryPostProcessor"/>
+
+    <!-- 事务支持 -->
+    <tx:annotation-driven transaction-manager="sspTransactionManager" proxy-target-class="false"/>
+    <bean id="sspTransactionManager" class="com.xiaomi.miui.ad.mail.ssp.SspDataSourceTransactionManager">
+        <property name="jadeDataSourceFactory" ref="jade.dataSourceFactory"/>
+        <property name="catalog" value="xiaomi_media_ssp_v2"/>
+    </bean>
+
+    <bean id="jade.dataSourceFactory" class="com.xiaomi.miui.ad.mail.ssp.SspDataSourceFactory">
+        <!-- 同media_ssp_v2的DAO层: 优先用各个DAO注解的catalog, 没有注解则用defaultCatalog -->
+        <property name="defaultCatalog" value="xiaomi_media_ssp_v2"/>
+    </bean>
+
+    <bean id="perfCounterConfiguration" class="com.xiaomi.rose.perfcounter.PerfCounterConfiguration">
+        <property name="groupName" value="com.xiaomi.miui.ad.mail_service"></property>
+        <property name="allowedIp">
+            <set>
+                <value>10</value>
+                <value>127.0.0.1</value>
+            </set>
+        </property>
+    </bean>
+
+    <!-- 邮箱配置文件读取 -->
+    <bean name="propertyConfigurer" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="locations">
+            <list>
+                <value>classpath:mail_config.properties</value>
+            </list>
+        </property>
+    </bean>
+
+    <!--mail sender-->
+    <bean id="javaMailSender" class="org.springframework.mail.javamail.JavaMailSenderImpl">
+        <property name="host" value="${mail.host}"/>
+        <!--
+        <property name="username" value="${mail.username}"/>
+        <property name="password" value="${mail.password}"/>
+        -->
+        <property name="javaMailProperties">
+            <props>
+                <prop key="mail.smtp.auth">false</prop>
+            </props>
+        </property>
+    </bean>
+
+    <bean id="simpleMailMessage" class="org.springframework.mail.SimpleMailMessage">
+        <property name="from">
+            <value>${mail.default.from}</value>
+        </property>
+        <property name="to">
+            <list>
+                <value>${mail.default.to}</value>
+            </list>
+        </property>
+        <property name="cc">
+            <list>
+                <value>jiajinghui@xiaomi.com</value>
+                <value>maoliangjin@xiaomi.com</value>
+                <value>yangtianjiao@xiaomi.com</value>
+            </list>
+        </property>
+    </bean>
+
+    <!--velocity 引擎定义-->
+    <bean id="velocityEngine" class="org.springframework.ui.velocity.VelocityEngineFactoryBean">
+        <property name="configLocation" value="classpath:velocity_config.properties"/>
+    </bean>
+
+    <!--
+    <bean id="velocityEngine" class="org.springframework.ui.velocity.VelocityEngineFactoryBean">
+        <property name="velocityProperties">
+            <props>
+                <prop key="resource.loader">class</prop>
+                <prop key="class.resource.loader.class">
+                    org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader
+                </prop>
+                <prop key="velocimacro.library"></prop>
+            </props>
+        </property>
+    </bean>
+    -->
+
+</beans>
